@@ -2,6 +2,9 @@
 
 # This script will help connect your backend services to higher dbs. (QA, UAT)
 
+# Absolute path to this script's directory (so we can read repo-local files after cd).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Declare an associative array where each value is an array of database variables
 declare -A services_list
 
@@ -21,8 +24,22 @@ function connect_to_higher_db() {
             # We need to extract the array definition first, then expand it
 
             cd ~/finetune/$service
+            if [[ "$environment" == "local" && "$service" != "service-fym" ]]; then
+                echo "Environment is local, skipping $service"
+                continue
+            fi
+
             # Delete the content of .env.local file before adding new variables
             echo "" > .env.local
+
+            if [[ "$environment" == "local" && "$service" == "service-fym" ]]; then
+                if [[ -f "$SCRIPT_DIR/.env.local" ]]; then
+                    cat "$SCRIPT_DIR/.env.local" >> .env.local
+                else
+                    echo "Warning: $SCRIPT_DIR/.env.local not found; skipping service-fym local vars" >&2
+                fi
+                continue
+            fi
 
             db_vars=${services_list[$service]}
             eval "array=$db_vars"
@@ -80,13 +97,16 @@ function connect_to_higher_db() {
 
 function usage() {
     echo "Usage: $0 <environment>"
-    echo "Environment can be one of: testing, uat"
+    echo "Environment can be one of: local, testing, uat"
     
-    if [[ "$1" != "testing" && "$1" != "uat" ]]; then
-        echo "Error: Environment must be one of testing, uat" >&2
+    if [[ "$1" != "local" && "$1" != "testing" && "$1" != "uat" ]]; then
+        echo "Error: Environment must be one of local, testing, uat" >&2
         exit 1
     fi
     environment=$1
+    if [[ "$environment" == "local" ]]; then
+        echo "Connecting to local database"
+    fi
     if [[ "$environment" == "testing" ]]; then
         echo "Connecting to testing database"
     fi
