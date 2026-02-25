@@ -73,33 +73,29 @@ function get_credential_value() {
 }
 
 function connect_to_higher_db() {
-    for service in "${!services_list[@]}"; do
-            echo "Setting $service"
-            # Use array expansion to iterate over the database variables
-            # The error is because we're trying to expand an array inside a string
-            # We need to extract the array definition first, then expand it
+    if [[ "$environment" == "local" ]]; then
+        # Local mode: clear .env.local for all services, only populate explicit local vars.
+        for service in "${!services_list[@]}"; do
+            echo "Setting $service (local)"
 
-            cd ~/finetune/$service
+            if ! cd ~/finetune/"$service"; then
+                echo "Warning: could not cd to ~/finetune/$service; skipping" >&2
+                continue
+            fi
 
-            # Delete the content of .env.local file before adding new variables
+            # Always clear .env.local for each service in local mode.
             echo "" > .env.local
 
-            if [[ "$environment" == "local" && "$service" == "service-fym" ]]; then
+            if [[ "$service" == "service-fym" ]]; then
                 if [[ -f "$SCRIPT_DIR/.env.local" ]]; then
                     cat "$SCRIPT_DIR/.env.local" >> .env.local
                 else
                     echo "Warning: $SCRIPT_DIR/.env.local not found; skipping service-fym local vars" >&2
                 fi
-                continue
-            fi
-
-            if [[ "$environment" == "local" && "$service" == "service-reporting" ]]; then
+            elif [[ "$service" == "service-reporting" ]]; then
+                local aws_profile="finetune-cb-nonprod"
                 for var in "${SERVICE_REPORTING_VARIABLES_LOCAL[@]}"; do
-                    # get credentials from uat
-                    aws_profile="finetune-cb-nonprod"
-                    service_name="reporting"
-                    environment="uat"
-                    value=$(get_credential_value "$aws_profile" "$service_name" "$environment" "$var")
+                    value="$(get_credential_value "$aws_profile" "reporting" "uat" "$var")"
                     exit_code=$?
                     if [[ $exit_code -ne 0 ]]; then
                         exit $exit_code
@@ -107,33 +103,42 @@ function connect_to_higher_db() {
                     echo "Setting $var for $service"
                     echo "$var=$value" >> .env.local
                 done
-                continue
             fi
+        done
 
-            if [[ "$environment" == "local" && "$service" != "service-fym" ]]; then
-                echo "Environment is local, skipping $service"
-                continue
+        return 0
+    fi
+
+    for service in "${!services_list[@]}"; do
+        echo "Setting $service"
+        # Use array expansion to iterate over the database variables
+        # The error is because we're trying to expand an array inside a string
+        # We need to extract the array definition first, then expand it
+
+        cd ~/finetune/$service
+
+        # Delete the content of .env.local file before adding new variables
+        echo "" > .env.local
+
+        db_vars=${services_list[$service]}
+        eval "array=$db_vars"
+        for var in "${array[@]}"; do
+            echo "Setting $var for $service"
+            service_name=${service#service-}
+            if [[ "$environment" == "testing" ]]; then
+                aws_profile="finetune-cb-production"
+            else
+                aws_profile="finetune-cb-nonprod"
             fi
+            aws_command="AWS_PROFILE=$aws_profile ~/finetune/infra/bin/creds $service_name $environment get $var"
+            echo "$aws_command"
 
-            db_vars=${services_list[$service]}
-            eval "array=$db_vars"
-            for var in "${array[@]}"; do
-                echo "Setting $var for $service"
-                service_name=${service#service-}
-                if [[ "$environment" == "testing" ]]; then
-                    aws_profile="finetune-cb-production"
-                else
-                    aws_profile="finetune-cb-nonprod"
-                fi
-                aws_command="AWS_PROFILE=$aws_profile ~/finetune/infra/bin/creds $service_name $environment get $var"
-                echo "$aws_command"
-
-                value="$(get_credential_value "$aws_profile" "$service_name" "$environment" "$var")"
-                exit_code=$?
-                if [[ $exit_code -ne 0 ]]; then
-                    exit $exit_code
-                fi
-                echo "Update .env.local for $service"
+            value="$(get_credential_value "$aws_profile" "$service_name" "$environment" "$var")"
+            exit_code=$?
+            if [[ $exit_code -ne 0 ]]; then
+                exit $exit_code
+            fi
+            echo "Update .env.local for $service"
             echo "$var=$value" >> .env.local
         done
     done
