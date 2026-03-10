@@ -12,7 +12,7 @@ declare -A services_list
 services_list=(
     ["service-fym"]="(DATABASE_URL LEARNOSITY_DOMAIN LEARNOSITY_SECRET LEARNOSITY_KEY LEARNOSITY_AP_ORG_ID SERVICE_WIZARDS_GRAPHQL_URL SERVICE_WIZARDS_ACCESS_TOKEN ASSOCIATED_RESOURCES_BUCKET_NAME S3_BUCKET_SUFFIX)" # Connecting to learnosity in the respective environment. Not valid if you need to work on service-learnosity itself.
     ["service-units"]="(DATABASE_URL)"
-    ["service-reporting"]="(FYM_DB SERVICE_UNITS_GRAPHQL_URL SERVICE_UNITS_ACCESS_TOKEN TRACKER_DB_URL)"
+    ["service-reporting"]="(FYM_DB SERVICE_UNITS_GRAPHQL_URL SERVICE_UNITS_ACCESS_TOKEN TRACKER_DB_URL SERVICE_WIZARDS_GRAPHQL_URL SERVICE_WIZARDS_ACCESS_TOKEN)"
     ["service-accounts"]="(DATABASE_URL)"
 )
 
