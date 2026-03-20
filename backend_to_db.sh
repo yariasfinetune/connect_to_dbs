@@ -9,8 +9,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 declare -A services_list
 
 # Define the database variables for each service as arrays
+TO DO: PG_REPLICA_DATABASE_URL should be the same as DATABASE_URL for now in service-fym
 services_list=(
-    ["service-fym"]="(DATABASE_URL LEARNOSITY_DOMAIN LEARNOSITY_SECRET LEARNOSITY_KEY LEARNOSITY_AP_ORG_ID SERVICE_WIZARDS_GRAPHQL_URL SERVICE_WIZARDS_ACCESS_TOKEN ASSOCIATED_RESOURCES_BUCKET_NAME S3_BUCKET_SUFFIX)" # Connecting to learnosity in the respective environment. Not valid if you need to work on service-learnosity itself.
+    ["service-fym"]="(DATABASE_URL PG_REPLICA_DATABASE_URL LEARNOSITY_DOMAIN LEARNOSITY_SECRET LEARNOSITY_KEY LEARNOSITY_AP_ORG_ID SERVICE_WIZARDS_GRAPHQL_URL SERVICE_WIZARDS_ACCESS_TOKEN ASSOCIATED_RESOURCES_BUCKET_NAME S3_BUCKET_SUFFIX)" # Connecting to learnosity in the respective environment. Not valid if you need to work on service-learnosity itself.
     ["service-units"]="(DATABASE_URL)"
     ["service-reporting"]="(FYM_DB SERVICE_UNITS_GRAPHQL_URL SERVICE_UNITS_ACCESS_TOKEN TRACKER_DB_URL SERVICE_WIZARDS_GRAPHQL_URL SERVICE_WIZARDS_ACCESS_TOKEN)"
     ["service-accounts"]="(DATABASE_URL)"
@@ -47,10 +48,19 @@ function get_credential_value() {
     # Check if the value contains DB or DATABASE and replace the host if needed
     if [[ "$var" == *"DB"* || "$var" == *"DATABASE"* ]]; then
         # Replace the database host with host.docker.internal:33333
+        if [[ "$var" == "PG_REPLICA_DATABASE_URL" ]]; then
+            # Use DATABASE_URL value but replace the database name with wizards
+            value=$(get_credential_value "$aws_profile" "$service_name" "$environment" "DATABASE_URL")
+            echo "Set PG_REPLICA_DATABASE_URL from DATABASE_URL, db name -> wizards" >&2
+        fi
         if [[ "$value" == postgresql://* ]]; then
             # Extract username, password and database name
             user_pass=$(echo "$value" | sed -E 's|postgresql://([^@]+)@.+|\1|')
             db_name=$(echo "$value" | sed -E 's|.+/([^/]+)$|\1|')
+            # For PG_REPLICA_DATABASE_URL, use wizards as the database name
+            if [[ "$var" == "PG_REPLICA_DATABASE_URL" ]]; then
+                db_name="wizards"
+            fi
             # Construct new connection string
             value="postgresql://${user_pass}@host.docker.internal:33333/${db_name}"
             echo "Modified connection string to use host.docker.internal:33333" >&2
