@@ -24,10 +24,6 @@ services_list=(
     ["service-accounts"]="(DATABASE_URL)"
 )
 
-variable_mapping=(
-    ["SERVICE_UNITS_GRAPHQL_URL"]="$SERVICE_UNITS_GRAPHQL_URL"
-    ["SERVICE_UNITS_ACCESS_TOKEN"]="$SERVICE_UNITS_ACCESS_TOKEN"
-)
 
 for service in "${!services_list[@]}"; do
     echo "Setting $service"
