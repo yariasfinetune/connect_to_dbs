@@ -24,6 +24,8 @@ services_list=(
     ["service-accounts"]="(DATABASE_URL)"
 )
 
+PROD_BACKEND_URL="https://apc-api-production.collegeboard.org"
+
 
 for service in "${!services_list[@]}"; do
     echo "Setting $service"
@@ -57,6 +59,21 @@ for service in "${!services_list[@]}"; do
         echo "$var=$value" >> .env.local
     done
 done
+
+cd ~/finetune/ui-fym/config
+if [[ -z "$PROD_BACKEND_URL" ]]; then
+    PROD_BACKEND_URL="https://apc-api-production.collegeboard.org"
+fi
+# Set FYM_UNITS_BACKEND_URL in webpack.dev.js (DefinePlugin uses key: value, not =)
+echo "Setting FYM_UNITS_BACKEND_URL in ui-fym to $PROD_BACKEND_URL/units"
+if grep -q 'FYM_UNITS_BACKEND_URL' webpack.dev.js; then
+    sed -i "s|^\([[:space:]]*\)FYM_UNITS_BACKEND_URL:.*|\1FYM_UNITS_BACKEND_URL: '\"${PROD_BACKEND_URL}/units\"',|" webpack.dev.js
+else
+    echo -e "\n      FYM_UNITS_BACKEND_URL: '\"${PROD_BACKEND_URL}/units\"'," >> webpack.dev.js
+fi
+cd -
+
+
 
 
 
