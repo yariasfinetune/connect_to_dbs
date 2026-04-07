@@ -17,7 +17,7 @@ DEPLOY_ENV=production
 declare -A services_list
 
 services_list=(
-    ["service-fym"]="(DATABASE_URL DEPLOY_ENV)" # Connecting to learnosity in the respective environment. Not valid if you need to work on service-learnosity itself.
+    ["service-fym"]="(DATABASE_URL DEPLOY_ENV LEARNOSITY_AP_ORG_ID LEARNOSITY_KEY LEARNOSITY_SECRET LEARNOSITY_PREAP_ORG_ID)" # Connecting to learnosity in the respective environment. Not valid if you need to work on service-learnosity itself.
     ["service-units"]="()"
     ["service-reporting"]="(FYM_DB TRACKER_DB_URL SERVICE_UNITS_GRAPHQL_URL SERVICE_UNITS_ACCESS_TOKEN)"
     # ["service-reporting"]="(FYM_DB TRACKER_DB_URL)"
