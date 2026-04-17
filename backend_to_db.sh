@@ -70,7 +70,7 @@ function get_credential_value() {
 
 
     if [[ "$var" == "ES_HOST1" ]]; then
-        value="http://host.docker.internal:33334"
+        value="host.docker.internal:33334"
         echo "Setting ES_HOST1 to host.docker.internal:33334" >&2
     fi
 
