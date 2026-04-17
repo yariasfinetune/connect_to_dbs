@@ -11,10 +11,11 @@ declare -A services_list
 # Define the database variables for each service as arrays
 # TO DO: PG_REPLICA_DATABASE_URL should be the same as DATABASE_URL for now in service-fym
 services_list=(
-    ["service-fym"]="(DATABASE_URL PG_REPLICA_DATABASE_URL LEARNOSITY_DOMAIN LEARNOSITY_SECRET LEARNOSITY_KEY LEARNOSITY_AP_ORG_ID LEARNOSITY_PREAP_ORG_ID SERVICE_WIZARDS_GRAPHQL_URL SERVICE_WIZARDS_ACCESS_TOKEN ASSOCIATED_RESOURCES_BUCKET_NAME S3_BUCKET_SUFFIX)" # Connecting to learnosity in the respective environment. Not valid if you need to work on service-learnosity itself.
-    ["service-units"]="(DATABASE_URL)"
+    ["service-fym"]="(DATABASE_URL DEPLOY_ENV PG_REPLICA_DATABASE_URL LEARNOSITY_DOMAIN LEARNOSITY_SECRET LEARNOSITY_KEY LEARNOSITY_AP_ORG_ID LEARNOSITY_PREAP_ORG_ID SERVICE_WIZARDS_GRAPHQL_URL SERVICE_WIZARDS_ACCESS_TOKEN ASSOCIATED_RESOURCES_BUCKET_NAME S3_BUCKET_SUFFIX)" # Connecting to learnosity in the respective environment. Not valid if you need to work on service-learnosity itself.
+    ["service-units"]="(DATABASE_URL ES_PASSWORD ES_USERNAME ES_HOST1 DEPLOY_ENV)"
     ["service-reporting"]="(FYM_DB SERVICE_UNITS_GRAPHQL_URL SERVICE_UNITS_ACCESS_TOKEN TRACKER_DB_URL SERVICE_WIZARDS_GRAPHQL_URL SERVICE_WIZARDS_ACCESS_TOKEN)"
     ["service-accounts"]="(DATABASE_URL)"
+    ["service-learnosity-sync"]="(DATABASE_URL LEARNOSITY_DOMAIN LEARNOSITY_KEY LEARNOSITY_SECRET SERVICE_REPORTING_URL SERVICE_JWT_TOKEN)"
 )
 
 SERVICE_REPORTING_VARIABLES_LOCAL=(
@@ -66,6 +67,14 @@ function get_credential_value() {
             echo "Modified connection string to use host.docker.internal:33333" >&2
         fi
     fi
+
+
+    if [[ "$var" == "ES_HOST1" ]]; then
+        value="http://host.docker.internal:33334"
+        echo "Setting ES_HOST1 to host.docker.internal:33334" >&2
+    fi
+
+
 
     if [[ "$var" == "TRACKER_DB_URL" ]]; then
         # Properly extract user:pass and db name, and reconstruct the connection string
